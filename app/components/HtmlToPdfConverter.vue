@@ -19,6 +19,9 @@
     </form>
 
     <p v-if="error" class="error">{{ error }}</p>
+    <p v-if="pdfUrl">
+      <a :href="pdfUrl" target="_blank" download>Download PDF</a>
+    </p>
   </div>
 </template>
 
@@ -28,10 +31,12 @@ import { ref } from 'vue'
 const selectedFile = ref(null)
 const isLoading = ref(false)
 const error = ref(null)
+const pdfUrl = ref(null)
 
 const handleFileChange = (event) => {
   selectedFile.value = event.target.files[0]
   error.value = null
+  pdfUrl.value = null
 }
 
 const convertPdf = async () => {
@@ -42,6 +47,7 @@ const convertPdf = async () => {
 
   isLoading.value = true
   error.value = null
+  pdfUrl.value = null
 
   const formData = new FormData()
   formData.append('file', selectedFile.value)
@@ -50,25 +56,22 @@ const convertPdf = async () => {
     const response = await fetch('http://127.0.0.1:8000/api/pdf/convert', {
       method: 'POST',
       body: formData,
+      headers: {
+        Accept: 'application/json',
+      },
     })
 
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`)
     }
 
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
+    const data = await response.json()
 
-    // اسم فایل رو از فایل HTML بسازیم
-    const htmlName = selectedFile.value.name.replace(/\.[^/.]+$/, '')
-    link.download = `${htmlName}.pdf`
-
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
+    if (data.status === 'success') {
+      pdfUrl.value = data.data.download_url
+    } else {
+      throw new Error(data.message || 'Conversion failed')
+    }
   } catch (e) {
     console.error(e)
     error.value = e.message
@@ -107,5 +110,17 @@ button:disabled {
 .error {
   color: red;
   margin-top: 20px;
+}
+a {
+  margin-top: 10px;
+  display: inline-block;
+  color: #fff;
+  background-color: #28a745;
+  padding: 10px 15px;
+  border-radius: 5px;
+  text-decoration: none;
+}
+a:hover {
+  background-color: #218838;
 }
 </style>
