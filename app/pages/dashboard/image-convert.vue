@@ -72,37 +72,33 @@ const convertImage = async () => {
   formData.append('format', selectedFormat.value)
 
   try {
-    // ۱) ارسال فایل برای تبدیل به بک لاراول
-    const response = await $fetch('http://127.0.0.1:8000/api/image/convert', {
+    // 1. Send the image to our Nuxt server proxy
+    const blob = await $fetch('/api/convert-image', {
       method: 'POST',
       body: formData,
+      // We expect a blob response (the converted image)
+      responseType: 'blob',
     })
 
-    // ۲) دریافت لینک دانلود از پاسخ JSON
-    const downloadUrl = response.data.download_url
-    const filename = response.data.filename
-
-    // ۳) دانلود فایل واقعی از لینک به صورت blob
-    const blobResponse = await fetch(downloadUrl)
-    if (!blobResponse.ok) throw new Error('Failed to download converted image.')
-
-    const blob = await blobResponse.blob()
-
-    // ۴) ایجاد لینک موقت برای دانلود و نمایش
+    // 2. Create a temporary URL to display the image and for downloading
     const url = URL.createObjectURL(blob)
     convertedImageUrl.value = url
 
-    // ۵) دانلود خودکار (اختیاری)
+    // 3. Trigger the download automatically
     const a = document.createElement('a')
     a.href = url
-    a.download = filename
+    a.download = `converted-image.${selectedFormat.value}`
     document.body.appendChild(a)
     a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+
+    // Note: We don't revoke the object URL immediately because the <img> tag needs it.
+    // It will be revoked automatically when the user navigates away or
+    // when a new image is converted and a new URL is created.
   } catch (e) {
     console.error('Error during image conversion:', e)
-    error.value = e.message
+    // Display the error message from the proxy, if available
+    error.value = e.data?.statusMessage || e.message || 'An unknown error occurred.'
   } finally {
     isLoading.value = false
   }
