@@ -1,8 +1,6 @@
 
 export default defineEventHandler(async (event) => {
   try {
-    console.log('Proxy endpoint hit!'); // Add this line for debugging
-
     // Read the multipart form data from the original browser request
     const multipart = await readMultipartFormData(event);
 
