@@ -25,8 +25,9 @@ const router = useRouter()
 // بررسی توکن در localStorage هنگام بارگذاری صفحه
 onMounted(() => {
   const token = localStorage.getItem('token')
-  if (!token) {
-    router.push('/login') // اگر لاگین نشده باشد، هدایت به صفحه لاگین
+  // اگر توکن وجود نداشت و کاربر در صفحه‌ی تبدیل تصویر نبود، او را به لاگین بفرست
+  if (!token && router.currentRoute.value.path !== '/dashboard/image-convert') {
+    router.push('/login')
   }
 })
 
